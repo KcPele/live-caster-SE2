@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { NextPage } from "next";
@@ -15,9 +16,10 @@ export const livecasterFormSchema = z.object({
   credits: z.string().min(2, { message: "credits must be atleast 5 characters." }).trim(),
 });
 export type LiveCasterFormType = z.infer<typeof livecasterFormSchema>;
-
+const NEYNAR_API_KEY = process.env.NEXT_PUBLIC_NEYNAR_API_KEY || "";
 const Home: NextPage = () => {
   const { address: connectedAddress } = useAccount();
+  const [generatedFrameUrl, setgeneratedFrameUrl] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -31,6 +33,45 @@ const Home: NextPage = () => {
   const processForm: SubmitHandler<LiveCasterFormType> = data => {
     console.log(data);
     reset();
+  };
+
+  const createFrame = () => {
+    //refrences
+    //https://docs.neynar.com/reference/publish-neynar-frame
+    const options = {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        api_key: NEYNAR_API_KEY,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        //name: this is the frame name
+        name: "test",
+        //pages: number of pages on a frame
+        pages: [
+          {
+            version: "vNext",
+            //image; preview of what is to be shown on the frame
+            image: {
+              aspect_ratio: "1.91:1",
+              //url: the image url
+              url: "https://i.imgur.com/qo2AzBf.jpeg",
+            },
+            //input: if there is any input field
+            input: { text: { enabled: false } },
+            //uuuid: Unique identifier for the page.
+            uuid: "asxaqw232",
+            buttons: [{ action_type: "link", title: "greet", index: 1 }],
+          },
+        ],
+      }),
+    };
+
+    fetch("https://api.neynar.com/v2/farcaster/frame", options)
+      .then(response => response.json())
+      .then(response => console.log(response))
+      .catch(err => console.error(err));
   };
 
   return (
